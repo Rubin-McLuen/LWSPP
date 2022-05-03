@@ -22,7 +22,14 @@ def simpleServer():
     serversocket.close()
 
 def processRequest(clientsocket, addr):
-    cmd = receiveMessage(clientsocket.recv(1024))
+    join_cmd = receiveMessage(clientsocket.recv(1024))
+    if "JOIN" in join_cmd:
+        parts = join_cmd.split()
+        chat_room_name = parts[1]
+        user_name = parts[2]
+        print(parts + chat_room_name + user_name)
+    else:
+        clientsocket.close()
 
 def getIPAddress():
     s = socket(AF_INET, SOCK_DGRAM)

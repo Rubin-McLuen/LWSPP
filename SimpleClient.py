@@ -1,12 +1,9 @@
-
-#SimpleClient
-
 from netTools import *
 
 def simpleClient(location):
 
     client = socket(AF_INET, SOCK_STREAM)
-    client.connect((location, 2000))
+    client.connect((location, 2024))
     outgoing = "Python Client: hello"
     client.send(outgoing.encode('ascii'))
     msg = client.recv(1024)
