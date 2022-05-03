@@ -23,10 +23,27 @@ def simpleServer():
 
 def processRequest(clientsocket, addr):
     join_cmd = str(receiveMessage(clientsocket.recv(1024)))
-    if "JOIN" in join_cmd:
-        parts = join_cmd.split()
+    parts = join_cmd.split()
+    if "JOIN" in join_cmd and len(parts) == 3:
         chat_room_name = parts[1]
         user_name = parts[2]
+        chatrooms = getChatrooms()
+        if '' in chatrooms.keys():
+            chatrooms.pop('')
+        if chat_room_name not in chatrooms.keys():
+            chatrooms[chat_room_name] = [[user_name, addr]]
+            sendMessage("Ok, \t" + chat_room_name + " created", clientsocket)
+        else:
+            if user_name in chatrooms[chat_room_name]:
+                sendMessage("Denied \t username not unique", clientsocket)
+                clientsocket.close()
+            elif chat_room_name in chatrooms.keys():
+                sendMessage("Ok \t joined " + chat_room_name, clientsocket)
+                chatrooms[chat_room_name].append([user_name, addr])
+        updateChatrooms(chatrooms)
+
+
+
 
 
     else:
@@ -47,20 +64,24 @@ def receiveMessage(response):
 def getChatrooms():
     chatrooms = {}
     with open("chatrooms.txt",'r') as data:
-        while True:
-            room = data.readline().strip().split()
-            if len(room) == 0:
-                break
+        for line in data:
+            room = line.strip().split(" ")
             room_name = room[0]
             names = []
             for i in room[1:]:
-                names.append(i)
+                name, addr = i.split(",")
+                names.append([name,addr])
             chatrooms[room_name] = names
-
     return chatrooms
 
-# simpleServer()
-print(getChatrooms())
+def updateChatrooms(chatrooms):
+    with open("chatrooms.txt", 'w') as file:
+        for room in chatrooms:
+            file.write(room + " ")
+            for user in chatrooms[room]:
+                file.write(user[0] + "," + user[1][0] + " ")
+            file.write("\n")
 
+simpleServer()
 
 
