@@ -17,9 +17,9 @@ def simpleServer():
     serversocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
     IP_address = getIPAddress()
-    serversocket.bind((IP_address, 2024))
+    serversocket.bind((IP_address, 2025))
 
-
+    myLock = Lock()
 
     while True:
         serversocket.listen(1)
@@ -29,12 +29,12 @@ def simpleServer():
         sockets.append((clientsocket,addr))
 
         try:
-            threading.Thread(target=processRequest, args=(clientsocket, addr)).start()
+            threading.Thread(target=processRequest, args=(clientsocket, addr, myLock)).start()
         except:
             pass
     serversocket.close()
 
-def processRequest(clientsocket, addr):
+def processRequest(clientsocket, addr, lock):
     join_cmd = str(receiveMessage(clientsocket.recv(1024)))
     parts = join_cmd.split()
     if "JOIN" in join_cmd and len(parts) == 3:
@@ -51,19 +51,45 @@ def processRequest(clientsocket, addr):
                 if user_name in user[0]:
                     sendMessage("Denied \t username not unique", clientsocket)
                     clientsocket.close()
-                elif chat_room_name in chatrooms.keys():
-                    sendMessage("Ok \t joined " + chat_room_name, clientsocket)
-                    chatrooms[chat_room_name].append([user_name, addr[0]])
+                    return None
+            if chat_room_name in chatrooms.keys():
+                sendMessage("Ok \t joined " + chat_room_name, clientsocket)
+                chatrooms[chat_room_name].append([user_name, addr[0]])
+
+        lock.acquire()
         updateChatrooms(chatrooms)
+        lock.release()
 
-    while True:
-        message = receiveMessage(clientsocket.recv(1024))
-        print("message" + message)
-        if "SEND" in message:
-            send_to_chat(message[5:], chat_room_name)
-
-
-
+        while True:
+            message = receiveMessage(clientsocket.recv(1024))
+            if message[:4] == "SEND":
+                send_to_chat(user_name, message[5:], chat_room_name)
+            elif message == "WHO":
+                members = ""
+                chatrooms = getChatrooms()
+                for i in chatrooms[chat_room_name]:
+                    members += i[0] + " "
+                sendMessage("MEMBERS \t" + members, clientsocket)
+            elif message == "LIST":
+                list_of_rooms = ""
+                for i in chatrooms.keys():
+                    list_of_rooms += i + " "
+                sendMessage("ROOMS \t" + list_of_rooms, clientsocket)
+            elif message == "EXIT":
+                for i in chatrooms[chat_room_name]:
+                    if user_name == i[0]:
+                        lock.acquire()
+                        chatrooms[chat_room_name].remove(i)
+                        lock.release()
+                for i in sockets:
+                    if addr == i[1]:
+                        lock.acquire()
+                        sockets.remove(i)
+                        lock.release()
+                lock.acquire()
+                updateChatrooms(chatrooms)
+                lock.release()
+                send_to_chat(user_name, user_name + " left the chat", chat_room_name)
 
     else:
         clientsocket.close()
@@ -101,16 +127,20 @@ def updateChatrooms(chatrooms):
                 file.write(user[0] + "," + user[1] + " ")
             file.write("\n")
 
-def send_to_chat(message, chat_room_name):
+def send_to_chat(user_name, message, chat_room_name):
     rooms = getChatrooms()
+    count = 0
     for user in rooms[chat_room_name]:
         ip = user[1]
+        print("user" + str(count) + " ip: " + ip)
+        count += 1
         global sockets
         for client in sockets:
-            if ip == client[1]:
-                print("yes")
-                sendMessage(message, client[0])
-                print("Sent " + message + " to " + client[0])
+            print("\t" + client[1][0])
+            if ip == client[1][0]:
+                sendMessage(user_name + ": " + message, client[0])
+                print("Sent "+ user_name + ": " + message + " to " + client[1][0] + " in " + chat_room_name)
+
 
 simpleServer()
 
