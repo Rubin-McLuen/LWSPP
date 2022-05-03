@@ -22,12 +22,13 @@ def simpleServer():
     serversocket.close()
 
 def processRequest(clientsocket, addr):
-    join_cmd = receiveMessage(clientsocket.recv(1024))
+    join_cmd = str(receiveMessage(clientsocket.recv(1024)))
     if "JOIN" in join_cmd:
         parts = join_cmd.split()
         chat_room_name = parts[1]
         user_name = parts[2]
-        print(parts + chat_room_name + user_name)
+
+
     else:
         clientsocket.close()
 
@@ -38,13 +39,28 @@ def getIPAddress():
 
 def sendMessage(message, clientsocket):
     clientsocket.send(message.encode('ascii'))
-    print("Server: " + message)
 
 def receiveMessage(response):
     message = response.decode('ascii')
-    print("\tClient: " + message)
     return message
 
-simpleServer()
+def getChatrooms():
+    chatrooms = {}
+    with open("chatrooms.txt",'r') as data:
+        while True:
+            room = data.readline().strip().split()
+            if len(room) == 0:
+                break
+            room_name = room[0]
+            names = []
+            for i in room[1:]:
+                names.append(i)
+            chatrooms[room_name] = names
+
+    return chatrooms
+
+# simpleServer()
+print(getChatrooms())
+
 
 
