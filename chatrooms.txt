@@ -1,1 +1,1 @@
-chatroom3 listener,172.16.220.230 Tom,172.16.216.239 
+chatroom3 listener,172.16.220.230 TOM,172.16.216.239 

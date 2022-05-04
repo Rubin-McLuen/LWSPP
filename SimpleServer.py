@@ -132,15 +132,12 @@ def send_to_chat(user_name, message, chat_room_name):
     count = 0
     for user in rooms[chat_room_name]:
         ip = user[1]
-        print("user" + str(count) + " ip: " + ip)
         count += 1
         global sockets
         for client in sockets:
-            print("\t" + client[1][0])
             if ip == client[1][0]:
                 sendMessage(user_name + ": " + message, client[0])
                 print("Sent "+ user_name + ": " + message + " to " + client[1][0] + " in " + chat_room_name)
-
 
 simpleServer()
 
